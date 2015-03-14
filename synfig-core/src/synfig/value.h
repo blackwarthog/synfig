@@ -88,6 +88,7 @@ class ValueBase
 
 public:
 	typedef std::vector<ValueBase> List;
+	typedef std::map<std::string, ValueBase> Map;
 
 	/*
  --	** -- D A T A -------------------------------------------------------------

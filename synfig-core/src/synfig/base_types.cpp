@@ -382,6 +382,25 @@ TypeList TypeList::instance;
 SYNFIG_IMPLEMENT_TYPE_ALIAS(ValueBase::List, TypeList)
 
 
+// Map
+
+class TypeMap: public Type
+{
+	static String to_string(const ValueBase::Map &x) { return etl::strprintf("Map (%d elements)", x.size()); }
+	void initialize_vfunc(Description &description)
+	{
+		Type::initialize_vfunc(description);
+		description.name = "map";
+		description.local_name = N_("map");
+		register_all<ValueBase::Map, to_string>();
+	}
+public:
+	static TypeMap instance;
+};
+TypeMap TypeMap::instance;
+SYNFIG_IMPLEMENT_TYPE_ALIAS(ValueBase::Map, TypeMap)
+
+
 // Canvas
 
 class TypeCanvas: public Type
@@ -586,6 +605,7 @@ namespace synfig {
 	Type &type_width_point		= TypeWidthPoint::instance;
 	Type &type_dash_item		= TypeDashItem::instance;
 	Type &type_list				= TypeList::instance;
+	Type &type_map				= TypeMap::instance;
 	Type &type_canvas			= TypeCanvas::instance;
 	Type &type_string			= TypeString::instance;
 	Type &type_gradient			= TypeGradient::instance;

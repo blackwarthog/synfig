@@ -50,6 +50,7 @@ namespace synfig {
 	extern Type &type_width_point;
 	extern Type &type_dash_item;
 	extern Type &type_list;
+	extern Type &type_map;
 	extern Type &type_canvas;
 	extern Type &type_string;
 	extern Type &type_gradient;
