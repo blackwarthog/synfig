@@ -35,6 +35,7 @@
 #include "segment.h"
 #include "string.h"
 #include <list>
+#include <map>
 #include <vector>
 #include <ETL/trivial>
 #include <ETL/handle>
@@ -273,6 +274,31 @@ public:
 		*this = List(list.begin(), list.end());
 	}
 
+	//! Gets the data as Map Type
+	const Map& get_map()const { return get(Map()); }
+
+	template<typename T>
+	std::map<String, T> get_map_of(const T &x)const
+	{
+		const List &list = get_list();
+		std::vector<T> out_list;
+		out_list.reserve(list.size());
+		for(List::const_iterator i = list.begin(); i != list.end(); ++i)
+			if (i->can_get(x))
+				out_list.push_back(i->get(x));
+		return out_list;
+	}
+
+	template<typename T>
+	void set_map_of(const std::map<String, T> &map)
+	{
+		Map m;
+		for(typename std::map<String, T>::const_iterator i = map.begin(); i != map.end(); ++i)
+			m[i->first] = i->second;
+		*this = m;
+	}
+
+
 #ifdef _DEBUG
 	String get_string() const;
 #endif	// _DEBUG
@@ -299,24 +325,10 @@ public:
 
 
 	// === GET TYPE MEMBERS ===================================================
+
 	template<typename T>
 	static Type& get_type(const T&) { return Type::get_type<T>(); }
 
-	// TODO: remove this, when removed all references in code
-	/*
-	static Type& get_type(const List &)
-		{ return Type::get_type<List>(); }
-	static Type& get_type(Canvas* const &)
-		{ return Type::get_type<Canvas*>(); }
-	static Type& get_type(ValueNode_Bone* const &)
-		{ return Type::get_type<ValueNode_Bone*>(); }
-	template <typename T> static Type& get_type(const T* &)
-		{ int i[(int)1 - (int)sizeof(T)]; return type_nil; }
-	template <typename T> static Type& get_type(const std::vector<T> &)
-		{ int i[(int)1 - (int)sizeof(T)]; return type_nil; }
-	template <typename T> static Type& get_type(const std::list<T> &)
-		{ int i[(int)1 - (int)sizeof(T)]; return type_nil; }
-	*/
 	// ========================================================================
 
 

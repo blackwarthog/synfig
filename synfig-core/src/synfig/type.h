@@ -80,8 +80,8 @@ template<typename T> class WeightedValue;
 
 namespace types_namespace
 {
-#define SYNFIG_DECLARE_TYPE_ALIAS(T) \
-	TypeAlias< T > get_type_alias(T const&);
+#define SYNFIG_DECLARE_TYPE_ALIAS(...) \
+	TypeAlias< __VA_ARGS__ > get_type_alias(__VA_ARGS__ const&);
 #define SYNFIG_IMPLEMENT_TYPE_ALIAS(T, Class) \
 	TypeAlias< T > get_type_alias(T const&) { return TypeAlias< T >(Class::instance); }
 
@@ -100,6 +100,7 @@ namespace types_namespace
 	SYNFIG_DECLARE_TYPE_ALIAS(WidthPoint)
 	SYNFIG_DECLARE_TYPE_ALIAS(DashItem)
 	SYNFIG_DECLARE_TYPE_ALIAS(std::vector<ValueBase>)
+	SYNFIG_DECLARE_TYPE_ALIAS(std::map<String, ValueBase>)
 	SYNFIG_DECLARE_TYPE_ALIAS(etl::loose_handle<Canvas>)
 	SYNFIG_DECLARE_TYPE_ALIAS(etl::handle<Canvas>)
 	SYNFIG_DECLARE_TYPE_ALIAS(Canvas*)

@@ -157,15 +157,20 @@ ValueBase::copy_properties_of(const ValueBase& x)
 bool
 ValueBase::empty()const
 {
-	return !is_valid() || (type == &type_list ? get_list().empty() : false);
+	return !is_valid()
+		|| ( type == &type_list ? get_list().empty()
+		   : type == &type_map ? get_map().empty()
+		   : false );
 }
 
 Type&
 ValueBase::get_contained_type()const
 {
-	if (type != &type_list || empty())
-		return type_nil;
-	return get_list().front().get_type();
+	if (!empty()) {
+		if (type == &type_list) return get_list().front().get_type();
+		if (type == &type_map) return get_map().begin()->second.get_type();
+	}
+	return type_nil;
 }
 
 ValueBase&
