@@ -43,7 +43,6 @@
 #include <sigc++/retype_return.h>
 #include <sigc++/retype.h>
 
-#include "general.h"
 #include <sstream>
 
 #include "docks/dock_toolbox.h"
@@ -58,6 +57,7 @@
 #include "docks/dockdialog.h"
 #include "widgets/widget_defaults.h"
 #include <synfigapp/main.h>
+#include "general.h"
 
 #endif
 

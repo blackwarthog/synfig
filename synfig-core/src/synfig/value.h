@@ -31,7 +31,6 @@
 
 #include "base_types.h"
 
-// TODO: remove following includes
 #include "angle.h"
 #include "segment.h"
 #include "string.h"
@@ -62,7 +61,6 @@
 
 namespace synfig {
 
-// TODO: remove following predeclarations
 class Canvas;
 class Vector;
 class Time;
@@ -305,6 +303,7 @@ public:
 	static Type& get_type(const T&) { return Type::get_type<T>(); }
 
 	// TODO: remove this, when removed all references in code
+	/*
 	static Type& get_type(const List &)
 		{ return Type::get_type<List>(); }
 	static Type& get_type(Canvas* const &)
@@ -317,6 +316,7 @@ public:
 		{ int i[(int)1 - (int)sizeof(T)]; return type_nil; }
 	template <typename T> static Type& get_type(const std::list<T> &)
 		{ int i[(int)1 - (int)sizeof(T)]; return type_nil; }
+	*/
 	// ========================================================================
 
 

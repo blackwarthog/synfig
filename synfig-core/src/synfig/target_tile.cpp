@@ -258,6 +258,8 @@ synfig::Target_Tile::render_frame_(Context context,ProgressCallback *cb)
 						for(int i=0;i<surface.get_w()*surface.get_h();i++)
 							surface[0][i].set_a(1.0f);
 						break;
+					default:
+						break;
 				}
 
 				// Add the tile to the target
@@ -349,7 +351,9 @@ synfig::Target_Tile::render_frame_(Context context,ProgressCallback *cb)
 					for(int i=0;i<surface.get_w()*surface.get_h(); ++i)
 						surface[0][i].set_a(1.0f);
 					break;
-				}
+				default:
+					break;
+			}
 
 			work_time += tile_timer();
 
