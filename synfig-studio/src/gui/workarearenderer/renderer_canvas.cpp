@@ -63,9 +63,9 @@ using namespace studio;
 
 /* === M A C R O S ========================================================= */
 
-#ifndef NDEBUG
-//#define DEBUG_TILES
-#endif
+//#ifndef NDEBUG
+#define DEBUG_TILES
+//#endif
 
 /* === G L O B A L S ======================================================= */
 

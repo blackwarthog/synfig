@@ -69,11 +69,11 @@ using namespace rendering;
 //#define DEBUG_OPTIMIZATION_MEASURE
 //#define DEBUG_OPTIMIZATION_COUNTERS
 
-#ifndef NDEBUG
-//#define DEBUG_TASK_LIST
-//#define DEBUG_OPTIMIZATION
-//#define DEBUG_OPTIMIZATION_EACH_CHANGE
-#endif
+//#ifndef NDEBUG
+#define DEBUG_TASK_LIST
+#define DEBUG_OPTIMIZATION
+#define DEBUG_OPTIMIZATION_EACH_CHANGE
+//#endif
 
 
 /* === M A C R O S ========================================================= */
