@@ -33,10 +33,7 @@
 #	include <config.h>
 #endif
 
-#include "warp.h"
-
-#include <synfig/localization.h>
-#include <synfig/general.h>
+#include <ETL/misc>
 
 #include <synfig/string.h>
 #include <synfig/time.h>
@@ -48,12 +45,18 @@
 #include <synfig/valuenode.h>
 #include <synfig/transform.h>
 #include <synfig/cairo_renddesc.h>
-#include <ETL/misc>
+
+#include <synfig/rendering/common/task/tasktransformation.h>
+#include <synfig/rendering/common/task/taskblend.h>
+#include <synfig/rendering/software/task/tasksw.h>
+
+#include "warp.h"
+
+#include <synfig/localization.h>
+#include <synfig/general.h>
 
 #endif
 
-using namespace std;
-using namespace etl;
 using namespace synfig;
 using namespace modules;
 using namespace lyr_std;
@@ -70,6 +73,167 @@ SYNFIG_LAYER_SET_VERSION(Warp,"0.1");
 SYNFIG_LAYER_SET_CVS_ID(Warp,"$Id$");
 
 /* === P R O C E D U R E S ================================================= */
+
+namespace {
+
+class TransformationPerspective: public rendering::Transformation
+{
+public:
+	typedef etl::handle<TransformationPerspective> Handle;
+
+	Matrix matrix;
+
+	TransformationPerspective() { }
+	explicit TransformationPerspective(const Matrix &matrix): matrix(matrix) { }
+
+protected:
+	virtual Transformation* clone_vfunc() const
+		{ return new TransformationPerspective(matrix); }
+	virtual Transformation* create_inverted_vfunc() const
+		{ return new TransformationPerspective(Matrix(matrix).invert()); }
+
+	virtual Point transform_vfunc(const Point &x, bool translate) const {
+		Point p;
+		Real z;
+		matrix.get_transformed(p[0], p[1], z, x[0], x[1], translate ? 1.0 : 0.0);
+
+	}
+
+	virtual Bounds transform_bounds_vfunc(const Bounds &bounds) const;
+	virtual bool can_merge_outer_vfunc(const Transformation &other) const;
+	virtual bool can_merge_inner_vfunc(const Transformation &other) const;
+	virtual void merge_outer_vfunc(const Transformation &other);
+	virtual void merge_inner_vfunc(const Transformation &other);
+};
+
+class TaskTransformationPerspective: public rendering::TaskTransformation
+{
+public:
+	typedef etl::handle<TaskTransformationPerspective> Handle;
+	static Token token;
+	virtual Token::Handle get_token() const { return token.handle(); }
+
+	Holder<TransformationAffine> transformation;
+
+	virtual const Transformation::Handle get_transformation() const
+		{ return transformation.handle(); }
+
+	virtual int get_pass_subtask_index() const;
+};
+
+class TaskPerspective: public rendering::Task, public rendering::TaskInterfaceTransformation
+{
+public:
+	typedef etl::handle<TaskCheckerBoard> Handle;
+	static Token token;
+	virtual Token::Handle get_token() const { return token.handle(); }
+
+	Color color;
+	bool antialias;
+	rendering::Holder<rendering::TransformationAffine> transformation;
+
+	TaskCheckerBoard(): antialias(true) { }
+	virtual const rendering::Transformation::Handle get_transformation() const
+		{ return transformation.handle(); }
+};
+
+
+class TaskCheckerBoardSW: public TaskCheckerBoard, public rendering::TaskSW,
+	public rendering::TaskInterfaceBlendToTarget,
+	public rendering::TaskInterfaceSplit
+{
+public:
+	typedef etl::handle<TaskCheckerBoardSW> Handle;
+	static Token token;
+	virtual Token::Handle get_token() const { return token.handle(); }
+
+	virtual void on_target_set_as_source() {
+		Task::Handle &subtask = sub_task(0);
+		if ( subtask
+		  && subtask->target_surface == target_surface
+		  && !Color::is_straight(blend_method) )
+		{
+			trunc_by_bounds();
+			subtask->source_rect = source_rect;
+			subtask->target_rect = target_rect;
+		}
+	}
+
+	virtual Color::BlendMethodFlags get_supported_blend_methods() const
+		{ return Color::BLEND_METHODS_ALL; }
+
+	virtual bool run(RunParams&) const {
+		if (!is_valid())
+			return true;
+
+		Vector ppu = get_pixels_per_unit();
+
+		Matrix bounds_transfromation;
+		bounds_transfromation.m00 = ppu[0];
+		bounds_transfromation.m11 = ppu[1];
+		bounds_transfromation.m20 = target_rect.minx - ppu[0]*source_rect.minx;
+		bounds_transfromation.m21 = target_rect.miny - ppu[1]*source_rect.miny;
+
+		Matrix matrix = bounds_transfromation * transformation->matrix;
+		Matrix inv_matrix = matrix.get_inverted();
+
+		int tw = target_rect.get_width();
+		Vector dx = inv_matrix.axis_x();
+		Vector dy = inv_matrix.axis_y() - dx*(Real)tw;
+		Vector p = inv_matrix.get_transformed( Vector((Real)target_rect.minx, (Real)target_rect.miny) );
+
+		LockWrite la(this);
+		if (!la)
+			return false;
+
+		Surface::alpha_pen apen(la->get_surface().get_pen(target_rect.minx, target_rect.miny));
+		ColorReal amount = blend ? this->amount : ColorReal(1.0);
+		apen.set_blend_method(blend ? blend_method : Color::BLEND_COMPOSITE);
+		Color c = color;
+		if (antialias) {
+			ColorReal kx(matrix.axis_x().mag()*0.5);
+			ColorReal ky(matrix.axis_y().mag()*0.5);
+			for(int iy = target_rect.miny; iy < target_rect.maxy; ++iy, p += dy, apen.inc_y(), apen.dec_x(tw))
+				for(int ix = target_rect.minx; ix < target_rect.maxx; ++ix, p += dx, apen.inc_x()) {
+					p[0] -= floor(p[0]);
+					p[1] -= floor(p[1]);
+
+					ColorReal px = p[0]*ColorReal(2);
+					px -= floor(px);
+					px = std::min(px, ColorReal(1) - px)*kx;
+
+					ColorReal py = p[1]*ColorReal(2);
+					py -= floor(py);
+					py = std::min(py, ColorReal(1) - py)*ky;
+
+					ColorReal a = std::min(px, py);
+					if ((p[0] < 0.5) != (p[1] < 0.5)) a = -a;
+					a = std::max(ColorReal(0), std::min(ColorReal(1), a + ColorReal(0.5)));
+
+					c.set_a(color.get_a()*a);
+					apen.put_value(c, amount);
+				}
+		} else {
+			for(int iy = target_rect.miny; iy < target_rect.maxy; ++iy, p += dy, apen.inc_y(), apen.dec_x(tw))
+				for(int ix = target_rect.minx; ix < target_rect.maxx; ++ix, p += dx, apen.inc_x()) {
+					p[0] -= floor(p[0]);
+					p[1] -= floor(p[1]);
+					ColorReal a((p[0] < 0.5) == (p[1] < 0.5) ? 1.0 : 0.0);
+					c.set_a(color.get_a()*a);
+					apen.put_value(c, amount);
+				}
+		}
+
+		return true;
+	}
+};
+
+rendering::Task::Token TaskCheckerBoard::token(
+	DescAbstract<TaskCheckerBoard>("CheckerBoard") );
+rendering::Task::Token TaskCheckerBoardSW::token(
+	DescReal<TaskCheckerBoardSW, TaskCheckerBoard>("CheckerBoardSW") );
+
+} // namespace
 
 /* === M E T H O D S ======================================================= */
 

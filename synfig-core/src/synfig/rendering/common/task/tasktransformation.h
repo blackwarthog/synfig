@@ -83,6 +83,8 @@ public:
 
 	virtual Rect calc_bounds() const;
 	virtual void set_coords_sub_tasks();
+
+	virtual void set_transformation_coords_sub_tasks();
 };
 
 
@@ -99,6 +101,7 @@ public:
 		{ return transformation.handle(); }
 
 	virtual int get_pass_subtask_index() const;
+	virtual void set_transformation_coords_sub_tasks();
 };
 
 
